@@ -1,79 +1,95 @@
-// app/index.js
 import React, { useState } from "react";
-import {
-    View,
-    Text,
-    Pressable,
-    Modal,
-    TextInput,
-    FlatList,
-    Alert,
-    StyleSheet,
-} from "react-native";
+import { Chip } from "react-native-paper";
+import { View, Text, Pressable, Modal, TextInput, FlatList, Alert, StyleSheet } from "react-native";
 
 export default function HomeScreen() {
-    const [tasks, setTasks] = useState([]); // Lista de tarefas
-    const [modalVisible, setModalVisible] = useState(false); // Modal visível ou não
-    const [newTask, setNewTask] = useState(""); // Texto da nova tarefa
-    const [editIndex, setEditIndex] = useState(null); // Índice da tarefa em edição
-    const [categoriasSelecionadas, setCategoriasSelecionadas] = useState([]);
+    // Lista de contatos
+    const [contacts, setContacts] = useState([]);
 
+    // Controle do modal (visível ou não)
+    const [modalVisible, setModalVisible] = useState(false);
 
-    const categoriasDisponiveis = ["Família", "Amigos", "Trabalho", "Escola"];
+    // Dados do novo contato
+    const [contactName, setContactName] = useState("");
+    const [contactPhone, setContactPhone] = useState("");
+    const [selectedCategories, setSelectedCategories] = useState([]);
 
-    function toggleCategoria(categoria) {
-        if (categoriasSelecionadas.includes(categoria)) {
-            setCategoriasSelecionadas(categoriasSelecionadas.filter(c => c !== categoria));
+    // Índice do contato que está sendo editado (ou null se for novo)
+    const [editIndex, setEditIndex] = useState(null);
+
+    // Lista de categorias disponíveis
+    const availableCategories = ["Família", "Amigos", "Trabalho", "Escola"];
+
+    // Alterna seleção de categorias
+    function toggleCategory(category) {
+        if (selectedCategories.includes(category)) {
+            setSelectedCategories(selectedCategories.filter(c => c !== category));
         } else {
-            setCategoriasSelecionadas([...categoriasSelecionadas, categoria]);
+            setSelectedCategories([...selectedCategories, category]);
         }
     }
 
+    // Função para adicionar ou editar um contato
+    function addOrEditContact() {
+        if (!contactName || !contactPhone) return; // Se o campo estiver vazio não faz nada
 
-    // Função para adicionar ou editar tarefa
-    function addOrEditTask() {
-        if (!newTask) return; // Se o campo estiver vazio (sem espaços ou texto), não faz nada
+        const newContact = {
+            nome: contactName,
+            telefone: contactPhone,
+            categorias: selectedCategories
+        };
 
         if (editIndex === null) {
-            tasks.push({ nome: newTask, categorias: categoriasSelecionadas });
+            // Selecionar novo contato (cópia do array atual)
+            setContacts([...contacts, newContact]);
         } else {
-            tasks[editIndex] = { nome: newTask, categorias: categoriasSelecionadas };
+            // Editar contato existente
+            const updatedContacts = [...contacts];
+            updatedContacts[editIndex] = newContact;
+            setContacts(updatedContacts);
         }
 
-
-        setTasks(tasks); // Atualiza o estado com a lista de tarefas modificada
-        setNewTask(""); // Limpa o campo de texto
-        setModalVisible(false); // Fecha o modal
+        // Limpar campos e fechar modal
+        setContactName("");
+        setContactPhone("");
+        setSelectedCategories([]);
+        setEditIndex(null);
+        setModalVisible(false);
     }
 
-    // Função para confirmar exclusão de tarefa
+    // Confirmação antes de excluir um contato
     function confirmDelete(index) {
-        Alert.alert("Excluir tarefa?", `Remover "${tasks[index]}"?`, [
+        Alert.alert("Excluir contato?", `Remover "${contacts[index].nome}"?`, [
             { text: "Cancelar", style: "cancel" },
             {
                 text: "Excluir",
                 style: "destructive",
                 onPress: () => {
-                    tasks.splice(index, 1); // Remove a tarefa diretamente do array
-                    setTasks(tasks); // Atualiza o estado com a lista modificada
+                    const updated = contacts.filter((_, i) => i !== index);
+                    setContacts(updated);
                 },
             },
         ]);
     }
 
-    // Função para abrir o modal em modo de edição
+    // Abre o modal preenchendo os dados para edição
     function openEditModal(index) {
-        setNewTask(tasks[index]); // Carrega o texto da tarefa no campo de edição
-        setEditIndex(index); // Define o índice da tarefa a ser editada
-        setModalVisible(true); // Abre o modal
+        const contact = contacts[index];
+        setContactName(contact.nome);
+        setContactPhone(contact.telefone);
+        setSelectedCategories(contact.categorias || []);
+        setEditIndex(index);
+        setModalVisible(true);
     }
 
     return (
         <View style={styles.container}>
-            {/* Botão para abrir o modal */}
+            {/* Botão para adicionar novo contato */}
             <Pressable
                 onPress={() => {
-                    setNewTask("");
+                    setContactName("");
+                    setContactPhone("");
+                    setSelectedCategories([]);
                     setEditIndex(null);
                     setModalVisible(true);
                 }}
@@ -82,30 +98,32 @@ export default function HomeScreen() {
                 <Text style={styles.addButtonText}>＋ Novo Contato</Text>
             </Pressable>
 
-            {/* Lista de tarefas */}
+            {/* Lista de contatos */}
             <FlatList
-                data={tasks}
-                keyExtractor={(_, i) => String(i)} // Identificador único para cada item
+                data={contacts}
+                keyExtractor={(_, i) => String(i)}
                 renderItem={({ item, index }) => (
-                    <View style={styles.taskItemContainer}>
-                        <View style={styles.taskItemBar} />
-                        <View style={{ flex: 1, marginLeft: 8 }}>
-                            <Text style={styles.taskItem}>{item.nome}</Text>
+                    <View style={styles.contactItemContainer}>
+                        <View style={styles.contactItemBar} />
+                        <View style={{ flex: 1, marginLeft: 10 }}>
+                            <Text style={styles.contactItem}>{item.nome}</Text>
+                            <Text style={{ color: "#333", fontSize: 14 }}>
+                                📞 {item.telefone}
+                            </Text>
                             <Text style={{ color: "#555", fontSize: 12 }}>
                                 Categorias: {item.categorias?.join(", ") || "Nenhuma"}
                             </Text>
                         </View>
-                        <View style={styles.taskButtons}>
-                            {/* Botões para editar e excluir */}
+                        <View style={styles.contactButtons}>
                             <Pressable
-                                onPress={() => openEditModal(index)} // Abre o modal para editar
-                                style={[styles.taskButton, styles.editButton]}
+                                onPress={() => openEditModal(index)}
+                                style={[styles.contactButton, styles.editButton]}
                             >
                                 <Text style={styles.buttonText}>✏️</Text>
                             </Pressable>
                             <Pressable
-                                onPress={() => confirmDelete(index)} // Exclui a tarefa
-                                style={[styles.taskButton, styles.deleteButton]}
+                                onPress={() => confirmDelete(index)}
+                                style={[styles.contactButton, styles.deleteButton]}
                             >
                                 <Text style={styles.buttonText}>🗑️</Text>
                             </Pressable>
@@ -117,7 +135,7 @@ export default function HomeScreen() {
                 }
             />
 
-            {/* Modal para adicionar ou editar tarefa */}
+            {/* Modal para adicionar/editar contato */}
             <Modal
                 animationType="slide"
                 transparent
@@ -126,48 +144,63 @@ export default function HomeScreen() {
             >
                 <View style={styles.modalBackdrop}>
                     <View style={styles.modalContent}>
-                        <Text style={{ marginBottom: 8 }}>
-                            {editIndex === null
-                                ? "Digite o nome do contato:"
-                                : "Edite os dados do contato:"}
+                        <Text style={{ marginBottom: 8, fontSize: 16, fontWeight: "500" }}>
+                            {editIndex === null ? "Digite o nome do contato:" : "Edite os dados do contato:"}
                         </Text>
+
+                        {/* Campo Nome */}
                         <TextInput
-                            value={newTask} // O valor do campo de texto é controlado pelo estado `newTask`
-                            onChangeText={setNewTask} // Atualiza o estado com o novo texto
-                            placeholder="Ex: Nome Sobrenome"
+                            value={contactName}
+                            onChangeText={setContactName}
+                            placeholder="Nome do contato"
                             style={styles.input}
                         />
-                        <Text style={{ marginBottom: 4 }}>Categorias:</Text>
-                        {categoriasDisponiveis.map((categoria) => (
-                            <Pressable
-                                key={categoria}
-                                onPress={() => toggleCategoria(categoria)}
-                                style={{
-                                    flexDirection: "row",
-                                    alignItems: "center",
-                                    marginBottom: 6,
-                                }}
-                            >
-                                <View
-                                    style={{
-                                        height: 20,
-                                        width: 20,
-                                        borderRadius: 4,
-                                        borderWidth: 1,
-                                        borderColor: "#333",
-                                        marginRight: 8,
-                                        backgroundColor: categoriasSelecionadas.includes(categoria)
-                                            ? "#0096c7"
-                                            : "#fff",
-                                    }}
-                                />
-                                <Text>{categoria}</Text>
-                            </Pressable>
-                        ))}
 
-                        <Pressable onPress={addOrEditTask} style={{ marginBottom: 8 }}>
+                        {/* Campo Telefone */}
+                        <TextInput
+                            value={contactPhone}
+                            onChangeText={setContactPhone}
+                            placeholder="Telefone"
+                            keyboardType="phone-pad"
+                            style={styles.input}
+                        />
+
+                        {/* Título das categorias */}
+                        <Text style={{ marginBottom: 6, fontWeight: "500" }}>Categorias:</Text>
+
+                        {/* Chips de categorias */}
+                        <View style={{ flexDirection: "row", flexWrap: "wrap", marginBottom: 12 }}>
+                            {availableCategories.map((categoria) => (
+                                <View key={categoria} style={{ marginRight: 8, marginBottom: 8 }}>
+                                    <Chip
+                                        mode="outlined"
+                                        selected={selectedCategories.includes(categoria)}
+                                        onPress={() => toggleCategory(categoria)}
+                                        selectedColor="#4f46e5"
+                                        style={{
+                                            borderColor: selectedCategories.includes(categoria)
+                                                ? "#4f46e5"
+                                                : "#cbd5e1",
+                                            backgroundColor: selectedCategories.includes(categoria)
+                                                ? "#e0e7ff"
+                                                : "#fff",
+                                        }}
+                                        textStyle={{
+                                            fontWeight: "500",
+                                        }}
+                                    >
+                                        {categoria}
+                                    </Chip>
+                                </View>
+                            ))}
+                        </View> 
+
+                         
+
+                        {/* Botões de ação */}
+                        <Pressable onPress={addOrEditContact} style={{ marginBottom: 8 }}>
                             <Text style={{ color: "#6200ee", textAlign: "center" }}>
-                                {editIndex === null ? "Adicionar" : "Salvar alterações"}
+                                {editIndex === null ? "Adicionar" : "Salvar"}
                             </Text>
                         </Pressable>
                         <Pressable onPress={() => setModalVisible(false)}>
@@ -186,56 +219,66 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 16,
+        backgroundColor: "#f2f6fc",
     },
     addButton: {
-        marginBottom: 16,
+        marginBottom: 20,
         alignSelf: "center",
-        backgroundColor: "#0096c7", // Vermelho (Pantone 485)
-        padding: 12,
-        borderRadius: 8,
+        backgroundColor: "#4f46e5",
+        paddingVertical: 14,
+        paddingHorizontal: 28,
+        borderRadius: 50,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+        elevation: 5,
     },
     addButtonText: {
         color: "#fff",
         fontSize: 16,
+        fontWeight: 600,
     },
-    taskItemContainer: {
+    contactItemContainer: {
         flexDirection: "row",
         alignItems: "center",
-        padding: 12,
-        paddingLeft: 0, // Remove o padding à esquerda
-        backgroundColor: "#9991", // Azul claro
-        borderRadius: 6,
+        padding: 8,
+        paddingLeft: 0,
+        backgroundColor: "#fff",
+        borderRadius: 12,
+        marginBottom: 12,
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 3,
-        overflow: "hidden"
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 6,
+        elevation: 3
     },
-    taskItemBar: {
-        width: 4, // Largura da barrinha
-        height: "100%", // Altura total do container
-        backgroundColor: "#0096c7", // Azul
-        borderTopLeftRadius: 6, // Bordas arredondadas no topo
-        borderBottomLeftRadius: 6, // Bordas arredondadas na base
+    contactItemBar: {
+        width: 6,
+        height: "100%",
+        backgroundColor: "#4f46e5",
+        borderTopLeftRadius: 12,
+        borderBottomLeftRadius: 12,
     },
-    taskItem: {
-        flex: 1,
-        fontSize: 16,
+    contactItem: {
+        fontSize: 17,
+        fontWeight: 600,
+        color: "#1f2937",
+
     },
-    taskButtons: {
+    contactButtons: {
         flexDirection: "row",
     },
-    taskButton: {
-        marginLeft: 8,
-        padding: 6,
-        borderRadius: 4,
+    contactButton: {
+        marginLeft: 10,
+        padding: 8,
+        borderRadius: 6,
     },
     editButton: {
-        backgroundColor: "#ffca28", // Cor de edição (amarelo)
+        backgroundColor: "#ffca28",
     },
     deleteButton: {
-        backgroundColor: "#f44336", // Cor de exclusão (vermelho)
+        backgroundColor: "#f44336",
     },
     buttonText: {
         color: "#fff",
@@ -243,26 +286,33 @@ const styles = StyleSheet.create({
     },
     emptyText: {
         textAlign: "center",
-        marginTop: 32,
-        color: "#666",
+        marginTop: 40,
+        color: "#6b7280",
+        fontSize: 16,
     },
     modalBackdrop: {
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "rgba(0,0,0,0.5)", // Fundo escuro com transparência
+        backgroundColor: "rgba(0,0,0,0.4)",
     },
     modalContent: {
-        width: "80%",
+        width: "85%",
         backgroundColor: "#fff",
-        padding: 20,
-        borderRadius: 10,
+        padding: 24,
+        borderRadius: 14,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.2,
+        shadowRadius: 10,
+        elevation: 6,
     },
     input: {
         borderWidth: 1,
-        borderColor: "#ccc",
-        padding: 8,
-        borderRadius: 6,
-        marginBottom: 12,
+        borderColor: "#d1d5db",
+        padding: 10,
+        borderRadius: 8,
+        marginBottom: 14,
+        backgroundColor: "#f9fafb",
     },
 });

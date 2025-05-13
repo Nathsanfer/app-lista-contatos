@@ -10,7 +10,7 @@ export default function Layout() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: "#0096c7" }, // Cor vermelha da paleta (Pantone 485)
+        headerStyle: { backgroundColor: "#6200ee" }, // Cor vermelha da paleta (Pantone 485)
         headerTintColor: "#fff", // Cor do texto no cabeçalho (branco)
       }}
     >
